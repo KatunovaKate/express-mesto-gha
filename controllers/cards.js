@@ -20,6 +20,9 @@ module.exports.deleteCard = (req, res) => {
       if (err.name === 'CastError') {
         return res.status(400).send({ message: 'Переданы неправильные данные' });
       }
+      if (err.name === 'ValidationError') {
+        return res.status(404).send({ message: err.message });
+      }
       return res.status(500).send({ message: 'Произошла ошибка' });
     });
 };
@@ -46,6 +49,9 @@ module.exports.likeCard = (req, res) => {
     if (err.name === 'CastError') {
       return res.status(400).send({ message: 'Переданы неправильные данные' });
     }
+    if (err.name === 'ValidationError') {
+      return res.status(404).send({ message: 'Несуществующий id' });
+    }
     return res.status(500).send({ message: 'Произошла ошибка' });
   });
 };
@@ -58,6 +64,9 @@ module.exports.dislikeCard = (req, res) => {
   ).then((card) => res.send({ data: card })).catch((err) => {
     if (err.name === 'CastError') {
       return res.status(400).send({ message: 'Переданы неправильные данные' });
+    }
+    if (err.name === 'ValidationError') {
+      return res.status(404).send({ message: 'Несуществующий id' });
     }
     return res.status(500).send({ message: 'Произошла ошибка' });
   });

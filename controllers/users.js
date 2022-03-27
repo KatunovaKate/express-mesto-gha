@@ -11,12 +11,10 @@ module.exports.getUsers = (req, res) => {
 };
 
 module.exports.getUsersById = (req, res) => {
-  User.findById(req.user._id)
+  User.findById(req.params.userId)
+    .orFail(() => res.status(404).send({ message: 'Пользователь не найден' }))
     .then((user) => res.send({ data: user }))
     .catch((err) => {
-      if (err.name === 'ReferenceError') {
-        return res.status(404).send({ message: err.message });
-      }
       if (err.name === 'CastError') {
         return res.status(400).send({ message: 'Переданы неправильные данные' });
       }
