@@ -12,16 +12,11 @@ module.exports.getCards = (req, res) => {
 
 module.exports.deleteCard = (req, res) => {
   Card.findByIdAndRemove(req.params.cardId)
+    .orFail(() => res.status(404).send({ message: 'Карточка не найдена' }))
     .then((card) => res.send({ data: card }))
     .catch((err) => {
-      if (err.name === 'ReferenceError') {
-        return res.status(404).send({ message: err.message });
-      }
       if (err.name === 'CastError') {
         return res.status(400).send({ message: 'Переданы неправильные данные' });
-      }
-      if (err.name === 'ValidationError') {
-        return res.status(404).send({ message: err.message });
       }
       return res.status(500).send({ message: 'Произошла ошибка' });
     });
@@ -45,12 +40,9 @@ module.exports.likeCard = (req, res) => {
     req.params.cardId,
     { $addToSet: { likes: req.user._id } }, // добавить _id в массив, если его там нет
     { new: true },
-  ).then((card) => res.send({ data: card })).catch((err) => {
+  ).orFail(() => res.status(404).send({ message: 'Несуществующий id' })).then((card) => res.send({ data: card })).catch((err) => {
     if (err.name === 'CastError') {
       return res.status(400).send({ message: 'Переданы неправильные данные' });
-    }
-    if (err.name === 'ValidationError') {
-      return res.status(404).send({ message: 'Несуществующий id' });
     }
     return res.status(500).send({ message: 'Произошла ошибка' });
   });
@@ -61,12 +53,9 @@ module.exports.dislikeCard = (req, res) => {
     req.params.cardId,
     { $pull: { likes: req.user._id } }, // убрать _id из массива
     { new: true },
-  ).then((card) => res.send({ data: card })).catch((err) => {
+  ).orFail(() => res.status(404).send({ message: 'Несуществующий id' })).then((card) => res.send({ data: card })).catch((err) => {
     if (err.name === 'CastError') {
       return res.status(400).send({ message: 'Переданы неправильные данные' });
-    }
-    if (err.name === 'ValidationError') {
-      return res.status(404).send({ message: 'Несуществующий id' });
     }
     return res.status(500).send({ message: 'Произошла ошибка' });
   });
