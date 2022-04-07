@@ -10,17 +10,21 @@ const cardSchema = new mongoose.Schema({
   link: {
     type: String,
     required: true,
+    validate: {
+      validator(v) {
+        return /^((ftp|http|https):\/\/)?(www\.)?([A-Za-zА-Яа-я0-9]{1}[A-Za-zА-Яа-я0-9-]*\.?)*\.{1}[A-Za-zА-Яа-я0-9-]{2,8}(\/([\w#!:.?+=&%@!\-/])*)?/.test(v);
+      },
+    },
   },
   owner: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'user',
     required: true,
   },
-  likes: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'user',
+  likes: {
+    type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'user' }],
     default: [],
-  }],
+  },
   createdAt: {
     type: Date,
     default: Date.now,
