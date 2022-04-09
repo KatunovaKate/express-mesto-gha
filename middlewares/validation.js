@@ -35,24 +35,41 @@ const authValidation = celebrate({
   }),
 });
 
-const userValidation = celebrate({
+const usernameAndAboutValidation = celebrate({
   body: Joi.object().keys({
-    name: Joi.string().min(2).max(30)
+    name: Joi.string().min(2).max(30).required()
       .messages({
         'string.min': 'Имя не должно быть меньше 2ух символов',
         'string.max': 'Имя не должно быть больше 30ти символов',
       }),
-    about: Joi.string().min(2).max(30)
+    about: Joi.string().min(2).max(30).required()
       .messages({
         'string.min': 'Описание не должно быть меньше 2ух символов',
         'string.max': 'Описание не должно быть больше 30ти символов',
       }),
-    avatar: Joi.string().custom((value, helper) => {
+  }),
+});
+
+const avatarValidation = celebrate({
+  body: Joi.object().keys({
+    avatar: Joi.string().required().custom((value, helper) => {
       if (!validator.isURL(value)) {
         return helper.error('string.uri');
       }
       return value;
     }),
+  }),
+});
+
+const validateCardId = celebrate({
+  params: Joi.object().keys({
+    cardId: Joi.string().required().hex().length(24),
+  }),
+});
+
+const validateUserId = celebrate({
+  params: Joi.object().keys({
+    userId: Joi.string().required().hex().length(24),
   }),
 });
 
@@ -75,6 +92,9 @@ const cardValidation = celebrate({
 
 module.exports = {
   authValidation,
-  userValidation,
+  usernameAndAboutValidation,
+  avatarValidation,
+  validateUserId,
+  validateCardId,
   cardValidation,
 };

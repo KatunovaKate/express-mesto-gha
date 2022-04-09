@@ -67,18 +67,7 @@ module.exports.login = (req, res, next) => {
 module.exports.getUsers = (req, res, next) => {
   User.find({})
     .then((user) => res.send({ data: user }))
-    .catch((err) => {
-      if (err.name === 'ValidationError' || err.name === 'CastError') {
-        next(new BadRequestError('Переданы неверные данные'));
-      }
-      if (err.name === 'ForbiddenError') {
-        next(new NotAccessError('Нет доступа'));
-      }
-      if (err.name === 'ReferenceError') {
-        next(new NotFoundError('Страница не найдена'));
-      }
-      next(err);
-    });
+    .catch(next);
 };
 
 module.exports.getUsersById = (req, res, next) => {
@@ -90,12 +79,6 @@ module.exports.getUsersById = (req, res, next) => {
     .catch((err) => {
       if (err.name === 'ValidationError' || err.name === 'CastError') {
         next(new BadRequestError('Переданы неверные данные'));
-      }
-      if (err.name === 'ForbiddenError') {
-        next(new NotAccessError('Нет доступа'));
-      }
-      if (err.name === 'ReferenceError') {
-        next(new NotFoundError('Пользователь не найден'));
       }
       next(err);
     });
@@ -111,12 +94,6 @@ module.exports.getCurrentUser = (req, res, next) => {
       if (err.name === 'ValidationError' || err.name === 'CastError') {
         next(new BadRequestError('Переданы неверные данные'));
       }
-      if (err.name === 'ForbiddenError') {
-        next(new NotAccessError('Нет доступа'));
-      }
-      if (err.name === 'ReferenceError') {
-        next(new NotFoundError('Пользователь не найден'));
-      }
       next(err);
     });
 };
@@ -126,7 +103,13 @@ module.exports.updateUserInfo = (req, res, next) => {
 
   User.findByIdAndUpdate(req.user._id, { name, about }, { new: true, runValidators: true })
     .then((user) => res.send({ data: user }))
-    .catch(next);
+    .catch((err) => {
+      if (err.name === 'ValidationError') {
+        next(new BadRequestError('Переданы неверные данные'));
+      } else {
+        next(err);
+      }
+    });
 };
 
 module.exports.updateAvatar = (req, res, next) => {
@@ -137,12 +120,6 @@ module.exports.updateAvatar = (req, res, next) => {
     .catch((err) => {
       if (err.name === 'ValidationError' || err.name === 'CastError') {
         next(new BadRequestError('Переданы неверные данные'));
-      }
-      if (err.name === 'ForbiddenError') {
-        next(new NotAccessError('Нет доступа'));
-      }
-      if (err.name === 'ReferenceError') {
-        next(new NotFoundError('Пользователь не найден'));
       }
       next(err);
     });
