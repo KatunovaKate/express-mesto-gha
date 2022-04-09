@@ -5,6 +5,7 @@ const { login, createUser } = require('./controllers/users');
 const { authValidation } = require('./middlewares/validation');
 const { errorHandler } = require('./middlewares/errorHandler');
 const auth = require('./middlewares/auth');
+const NotFoundError = require('./errors/not-found-err');
 
 const { PORT = 3000 } = process.env;
 const app = express();
@@ -21,8 +22,8 @@ app.use(auth);
 app.use('/', require('./routes/users'));
 app.use('/', require('./routes/cards'));
 
-app.use((req, res) => {
-  res.status(404).send({ message: 'Страницы не существует' });
+app.use((req, res, next) => {
+  next(new NotFoundError('Страница не найдена'));
 });
 
 app.use(errorHandler);

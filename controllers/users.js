@@ -3,7 +3,9 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/user');
 const { TOKEN_SECRET_KEY, SALT_ROUNDS } = require('../config/config');
 const NotFoundError = require('../errors/not-found-err');
+const NotAccessError = require('../errors/not-access-err');
 const ConflictError = require('../errors/conflict-err');
+const BadRequestError = require('../errors/bad-request-err');
 
 module.exports.createUser = (req, res, next) => {
   const {
@@ -19,14 +21,19 @@ module.exports.createUser = (req, res, next) => {
       if (user) {
         throw new ConflictError('Пользователь уже существует');
       }
-      bcrypt.hash(password, SALT_ROUNDS);
+      return bcrypt.hash(password, SALT_ROUNDS);
     })
     .then((hash) => User.create({
       name, about, avatar, password: hash, email,
     }))
     .then((user) => User.findOne({ _id: user._id }))
     .then((user) => res.status(200).send({ data: user }))
-    .catch(next);
+    .catch((err) => {
+      if (err.name === 'ValidationError' || err.name === 'CastError') {
+        next(new BadRequestError('Переданы неверные данные'));
+      }
+      next(err);
+    });
 };
 
 module.exports.login = (req, res, next) => {
@@ -35,24 +42,43 @@ module.exports.login = (req, res, next) => {
   User.findOne({ email }).select('+password')
     .then((user) => {
       if (!user) {
-        return Promise.reject(new Error('Неправильные почта или пароль'));
+        throw new NotAccessError('Неправильные почта или пароль');
       }
       return bcrypt.compare(password, user.password)
         .then((matched) => {
           if (!matched) {
-            return Promise.reject(new Error('Неправильные почта или пароль'));
+            throw new NotAccessError('Неправильные почта или пароль');
           }
           const token = jwt.sign({ _id: user._id }, TOKEN_SECRET_KEY, { expiresIn: '7d' });
           return res.send({ token });
         });
     })
-    .catch(next);
+    .catch((err) => {
+      if (err.name === 'ValidationError' || err.name === 'CastError') {
+        next(new BadRequestError('Переданы неверные данные'));
+      }
+      if (err.name === 'ReferenceError') {
+        next(new NotFoundError('Страница не найдена'));
+      }
+      next(err);
+    });
 };
 
 module.exports.getUsers = (req, res, next) => {
   User.find({})
     .then((user) => res.send({ data: user }))
-    .catch(next);
+    .catch((err) => {
+      if (err.name === 'ValidationError' || err.name === 'CastError') {
+        next(new BadRequestError('Переданы неверные данные'));
+      }
+      if (err.name === 'ForbiddenError') {
+        next(new NotAccessError('Нет доступа'));
+      }
+      if (err.name === 'ReferenceError') {
+        next(new NotFoundError('Страница не найдена'));
+      }
+      next(err);
+    });
 };
 
 module.exports.getUsersById = (req, res, next) => {
@@ -61,19 +87,38 @@ module.exports.getUsersById = (req, res, next) => {
       throw new NotFoundError('Пользователь не найден');
     })
     .then((user) => res.send({ data: user }))
-    .catch(next);
+    .catch((err) => {
+      if (err.name === 'ValidationError' || err.name === 'CastError') {
+        next(new BadRequestError('Переданы неверные данные'));
+      }
+      if (err.name === 'ForbiddenError') {
+        next(new NotAccessError('Нет доступа'));
+      }
+      if (err.name === 'ReferenceError') {
+        next(new NotFoundError('Пользователь не найден'));
+      }
+      next(err);
+    });
 };
 
 module.exports.getCurrentUser = (req, res, next) => {
-  const { authorization } = req.headers;
-  const token = authorization.replace('Bearer ', '');
-  const decoded = jwt.verify(token, TOKEN_SECRET_KEY);
-  User.findById(decoded._id)
+  User.findById(req.user._id)
     .orFail(() => {
       throw new NotFoundError('Пользователь не найден');
     })
     .then((user) => res.send({ data: user }))
-    .catch(next);
+    .catch((err) => {
+      if (err.name === 'ValidationError' || err.name === 'CastError') {
+        next(new BadRequestError('Переданы неверные данные'));
+      }
+      if (err.name === 'ForbiddenError') {
+        next(new NotAccessError('Нет доступа'));
+      }
+      if (err.name === 'ReferenceError') {
+        next(new NotFoundError('Пользователь не найден'));
+      }
+      next(err);
+    });
 };
 
 module.exports.updateUserInfo = (req, res, next) => {
@@ -89,5 +134,16 @@ module.exports.updateAvatar = (req, res, next) => {
 
   User.findByIdAndUpdate(req.user._id, { avatar }, { new: true, runValidators: true })
     .then((user) => res.send({ data: user }))
-    .catch(next);
+    .catch((err) => {
+      if (err.name === 'ValidationError' || err.name === 'CastError') {
+        next(new BadRequestError('Переданы неверные данные'));
+      }
+      if (err.name === 'ForbiddenError') {
+        next(new NotAccessError('Нет доступа'));
+      }
+      if (err.name === 'ReferenceError') {
+        next(new NotFoundError('Пользователь не найден'));
+      }
+      next(err);
+    });
 };
